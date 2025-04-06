@@ -9,33 +9,41 @@ template<typename K, typename V, typename Hash = std::hash<K>>
 class hash_map {
 private:
     std::vector<std::list< std::pair<K, V> >> table;
-    size_t element_count;
-    double max_load_factor;
+    size_t elementCount;
+    double maxLoadFactor;
     Hash hasher;
 
-    void rehash_if_needed() {
-        if (load_factor() > max_load_factor) {
-            size_t new_bucket_count = table.size() * 2 + 1;
-            rehash(new_bucket_count);
+    void rehashIfNeeded() {
+        if (loadFactor() > maxLoadFactor) {
+            size_t newBucketCount = newIncreasedSize();
+            rehash(newBucketCount);
         }
     }
 
-    void rehash(size_t new_bucket_count) {
-        if (new_bucket_count <= table.size()) return;
+    void rehash(size_t newBucketCount) {
+        if (newBucketCount <= table.size()) return;
 
-        std::vector<std::list< std::pair<K, V> >> new_table(new_bucket_count);
+        std::vector<std::list< std::pair<K, V> >> newTable(newBucketCount);
         for (const auto& bucket : table) {
             for (const auto& [key, value] : bucket) {
-                size_t index = hasher(key) % new_bucket_count;
-                new_table[index].emplace_back(key, value);
+                size_t index = getIndex(key, newBucketCount);
+                newTable[index].emplace_back(key, value);
             }
         }
-        table = std::move(new_table);
+        table = std::move(newTable);
+    }
+
+    size_t getIndex(K key, size_t bucketCount = 0) {
+        return hasher(key) % (bucketCount == 0 ? table.size() : bucketCount);
+    }
+    
+    size_t newIncreasedSize() {
+        return table.size() * 2 + 1;
     }
 
 public:
-    hash_map(size_t initial_bucket_count = 8, double load_factor = 2.0)
-        : table(initial_bucket_count), element_count(0), max_load_factor(load_factor) {}
+    hash_map(size_t initialBucketCount = 8, double loadFactor = 2.0)
+        : table(initialBucketCount), elementCount(0), maxLoadFactor(loadFactor) {}
 
     ~hash_map() { 
         clear(); 
@@ -46,12 +54,12 @@ public:
         for (auto& bucket : table) {
             bucket.clear();
         }
-        element_count = 0;
+        elementCount = 0;
         std::cout << "hash_map is cleared" << std::endl;
     }
 
-    void insert(const K& key, const V& value) {
-        size_t index = hasher(key) % table.size();
+    void insert(K key, V value) {
+        size_t index = getIndex(key);
         for (auto& pair : table[index]) {
             if (pair.first == key) {
                 pair.second = value;
@@ -59,47 +67,47 @@ public:
             }
         }
         table[index].emplace_back(key, value);
-        ++element_count;
-        rehash_if_needed();
+        ++elementCount;
+        rehashIfNeeded();
     }
 
-    V& operator[](const K& key) {
-        size_t index = hasher(key) % table.size();
+    V& operator[](K key) {
+        size_t index = getIndex(key);
         for (auto& pair : table[index]) {
             if (pair.first == key) return pair.second;
         }
         table[index].emplace_back(key, V{});
-        ++element_count;
-        rehash_if_needed();
+        ++elementCount;
+        rehashIfNeeded();
         return table[index].back().second;
     }
 
-    void erase(const K& key) {
-        size_t index = hasher(key) % table.size();
+    void erase(K key) {
+        size_t index = getIndex(key);
         auto& bucket = table[index];
         for (auto it = bucket.begin(); it != bucket.end(); ++it) {
             if (it->first == key) {
                 bucket.erase(it);
-                --element_count;
+                --elementCount;
                 return;
             }
         }
     }
 
     size_t size() {
-        return element_count;
+        return elementCount;
     }
 
-    double get_load_factor() {
-        return max_load_factor;
+    double getLoadFactor() {
+        return maxLoadFactor;
     }
 
-    void set_load_factor(double factor) {
-        max_load_factor = factor;
-        rehash_if_needed();
+    void setLoadFactor(double factor) {
+        maxLoadFactor = factor;
+        rehashIfNeeded();
     }
 
-    double load_factor() {
-        return 1.0 * element_count / table.size();
+    double loadFactor() {
+        return 1.0 * elementCount / table.size();
     }
 };

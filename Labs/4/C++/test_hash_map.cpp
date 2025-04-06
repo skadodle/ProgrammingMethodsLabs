@@ -14,10 +14,10 @@ int main() {
     map.erase("apple");
     std::cout << "After erasing 'apple', size = " << map.size() << "\n";
 
-    std::cout << "Load factor = " << map.load_factor() << "\n";
+    std::cout << "Load factor = " << map.loadFactor() << "\n";
 
-    map.set_load_factor(1.5);
-    std::cout << "Updated max load factor = " << map.get_load_factor() << "\n";
+    map.setLoadFactor(1.5);
+    std::cout << "Updated max load factor = " << map.getLoadFactor() << "\n";
 
     return 0;
 }
