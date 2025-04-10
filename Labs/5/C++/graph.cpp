@@ -4,7 +4,7 @@ int BFS(GraphWithoutDistance G, int v) {
     if (G.empty())
         return 0;
 
-    std::set<int> visited;
+    std::unordered_set<int> visited;
     std::queue<int> queue;
     int result = 0;
 
@@ -30,7 +30,7 @@ int DFS(GraphWithoutDistance G, int v) {
     if (G.empty())
         return 0;
 
-    std::set<int> visited;
+    std::unordered_set<int> visited;
     std::stack<int> stack;
     int result = 0;
 
@@ -53,12 +53,10 @@ int DFS(GraphWithoutDistance G, int v) {
 }
 
 void Dijkstra(const GraphType& G, int src, CostsType& costs, ParentsType& parents) {
-    // Приоритетная очередь: пары (расстояние, вершина)
-    std::priority_queue<std::pair<int, int>, std::vector<std::pair<int, int>>, std::greater<std::pair<int, int>>> pq;
+    PriorityQueueType pq;
     
-    // Инициализация
-    for (const auto& [node, _] : G) {
-        costs[node] = std::numeric_limits<int>::max();
+    for (const auto& [node, el] : G) {
+        costs[node] = INF;
     }
     costs[src] = 0;
     pq.push({0, src});
@@ -68,14 +66,11 @@ void Dijkstra(const GraphType& G, int src, CostsType& costs, ParentsType& parent
         int current_cost = pq.top().first;
         pq.pop();
 
-        // Если нашли более длинный путь - пропускаем
         if (current_cost > costs[current_node]) continue;
 
-        // Проверяем всех соседей
         for (const auto& [neighbor, weight] : G.at(current_node)) {
             int new_cost = current_cost + weight;
 
-            // Если нашли более короткий путь
             if (new_cost < costs[neighbor]) {
                 costs[neighbor] = new_cost;
                 parents[neighbor] = current_node;
@@ -85,15 +80,120 @@ void Dijkstra(const GraphType& G, int src, CostsType& costs, ParentsType& parent
     }
 }
 
+GraphType Kraskala(GraphType& graph) {
+    if (graph.empty()) return {};
 
-GraphType Kryskala() {
-    abort();
+    std::vector<std::tuple<int, int, int>> edges; // (weight, u, v)
+    std::unordered_map<int, int> parent;
+    GraphType mst;
+
+    for (const auto& [u, neighbors] : graph) {
+        parent[u] = u;
+        for (const auto& [v, weight] : neighbors) {
+            edges.emplace_back(weight, u, v);
+        }
+    }
+
+    std::sort(edges.begin(), edges.end());
+
+    auto find = [&](int x) {
+        while (parent[x] != x) {
+            parent[x] = parent[parent[x]];
+            x = parent[x];
+        }
+        return x;
+    };
+
+    for (const auto& edge : edges) {
+        int weight = std::get<0>(edge);
+        int u = std::get<1>(edge);
+        int v = std::get<2>(edge);
+
+        int u_root = find(u);
+        int v_root = find(v);
+
+        if (u_root != v_root) {
+            mst[u][v] = weight;
+            parent[v_root] = u_root;
+        }
+    }
+
+    return mst;
 }
 
-GraphType Prima() {
-    abort();
+GraphType Prima(GraphType& graph, int start) {
+    if (graph.empty()) return {};
+
+    GraphType mst;
+    CostsType minWeight;
+    ParentsType parent;
+    std::unordered_set<int> inMST;
+    
+    for (const auto& [node, el] : graph) {
+        minWeight[node] = INF;
+    }
+    minWeight[start] = 0;
+
+    PriorityQueueType pq;
+    pq.push({0, start});
+
+    // !DELETE DEBUG
+    std::ofstream log("log.txt");
+    int step = 0;
+    // !END DEBUG
+
+    while (!pq.empty()) {
+        int u = pq.top().second;
+        pq.pop();
+
+        if (inMST.count(u)) {
+            // !DELETE DEBUG
+            LogState(log, step++, pq, minWeight, parent, inMST, mst);
+            // !END DEBUG
+            continue;
+        }
+        inMST.insert(u);
+
+        // Добавляем ребро в MST (кроме стартовой вершины)
+        if (parent.find(u) != parent.end()) {
+            mst[parent[u]][u] = minWeight[u];
+        }
+
+        // Обновляем ключи соседей
+        for (const auto& [v, weight] : graph.at(u)) {
+            if (!inMST.count(v) && weight < minWeight[v]) {
+                minWeight[v] = weight;
+                parent[v] = u;
+                pq.push({minWeight[v], v});
+            }
+        }
+
+        // !DELETE DEBUG
+        LogState(log, step++, pq, minWeight, parent, inMST, mst);
+        // !END DEBUG
+    }
+
+    // !DELETE DEBUG
+    log.close();
+    // !END DEBUG
+
+    return mst;
 }
 
-MatrixType Floyd_Yorshell() {
-    abort();
+void FloydWarshall(MatrixType& dist) {
+    int n = dist.size();
+    
+    for (int i = 0; i < n; ++i)
+        dist[i][i] = 0;
+    
+    // Основная часть алгоритма
+    for (int k = 0; k < n; ++k) {
+        for (int i = 0; i < n; ++i) {
+            for (int j = 0; j < n; ++j) {
+                if (dist[i][k] < INF && dist[k][j] < INF) {
+                    dist[i][j] = std::min(dist[i][j], dist[i][k] + dist[k][j]);
+                }
+            }
+        }
+    }
 }
