@@ -54,6 +54,7 @@ int DFS(GraphWithoutDistance G, int v) {
 
 void Dijkstra(const GraphType& G, int src, CostsType& costs, ParentsType& parents) {
     PriorityQueueType pq;
+    std::unordered_set<int> visited;
     
     for (const auto& [node, el] : G) {
         costs[node] = INF;
@@ -64,6 +65,11 @@ void Dijkstra(const GraphType& G, int src, CostsType& costs, ParentsType& parent
     while (!pq.empty()) {
         int current_node = pq.top().second;
         int current_cost = pq.top().first;
+        if (visited.count(current_node)) {
+            pq.pop();
+            continue;
+        }
+        visited.insert(current_node);
         pq.pop();
 
         if (current_cost > costs[current_node]) continue;
