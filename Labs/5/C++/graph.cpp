@@ -86,41 +86,49 @@ void Dijkstra(const GraphType& G, int src, CostsType& costs, ParentsType& parent
     }
 }
 
-GraphType Kraskala(GraphType& graph) {
+GraphType Kruskal(GraphType& graph) {
     if (graph.empty()) return {};
 
-    std::vector<std::tuple<int, int, int>> edges; // (weight, u, v)
-    std::unordered_map<int, int> parent;
+    std::vector<std::tuple<int, int, int>> edges;
+    std::vector<std::unordered_set<int>> dsu;
+    std::unordered_map<int, size_t> vertex_to_set;
     GraphType mst;
 
+    size_t set_index = 0;
     for (const auto& [u, neighbors] : graph) {
-        parent[u] = u;
+        edges.reserve(edges.size() + neighbors.size());
         for (const auto& [v, weight] : neighbors) {
-            edges.emplace_back(weight, u, v);
+            if (u < v) {
+                edges.emplace_back(weight, u, v);
+            }
         }
+        
+        dsu.push_back({u});
+        vertex_to_set[u] = set_index++;
     }
 
-    std::sort(edges.begin(), edges.end());
+    std::sort(edges.begin(), edges.end(), 
+        [](const auto& a, const auto& b) {
+            return std::get<0>(a) < std::get<0>(b);
+        });
 
-    auto find = [&](int x) {
-        while (parent[x] != x) {
-            parent[x] = parent[parent[x]];
-            x = parent[x];
-        }
-        return x;
-    };
+    for (const auto& [weight, u, v] : edges) {
+        size_t set_u = vertex_to_set[u];
+        size_t set_v = vertex_to_set[v];
 
-    for (const auto& edge : edges) {
-        int weight = std::get<0>(edge);
-        int u = std::get<1>(edge);
-        int v = std::get<2>(edge);
-
-        int u_root = find(u);
-        int v_root = find(v);
-
-        if (u_root != v_root) {
+        if (set_u != set_v) {
             mst[u][v] = weight;
-            parent[v_root] = u_root;
+            mst[v][u] = weight;
+
+            if (dsu[set_u].size() < dsu[set_v].size()) {
+                std::swap(set_u, set_v);
+            }
+
+            for (int vertex : dsu[set_v]) {
+                dsu[set_u].insert(vertex);
+                vertex_to_set[vertex] = set_u;
+            }
+            dsu[set_v].clear();
         }
     }
 
