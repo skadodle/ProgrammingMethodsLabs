@@ -1,8 +1,13 @@
 #include "substring.h"
 
-std::vector<size_t> KMP(const std::string& text, const std::string& pattern) {
-    std::vector<size_t> border(pattern.length());
-    std::vector<size_t> result;
+std::vector<int> KMP(const std::string& text, const std::string& pattern) {
+    if (text.length() < pattern.length())
+        return std::vector<int>();
+    if (text.length() == pattern.length())
+        return std::vector<int>{0};
+
+    std::vector<int> border(pattern.length());
+    std::vector<int> result;
     bordersKMP(pattern, border);
 
     // cout border
@@ -17,8 +22,8 @@ std::vector<size_t> KMP(const std::string& text, const std::string& pattern) {
         std::cout << std::endl;
     }
 
-    size_t matched_pos = 0;
-    for(size_t current = 0; current < text.length(); current++) {
+    int matched_pos = 0;
+    for(int current = 0; current < text.length(); current++) {
 		while (matched_pos > 0 && pattern[matched_pos] != text[current] )
 			matched_pos = border[matched_pos - 1];
 			
@@ -33,13 +38,13 @@ std::vector<size_t> KMP(const std::string& text, const std::string& pattern) {
 
     return result;
 }
-void bordersKMP(const std::string& pattern, std::vector<size_t> &border) {
+void bordersKMP(const std::string& pattern, std::vector<int> &border) {
     border[0] = 0;
     for (int i = 1; i < border.size(); ++i) {
         border[i] = compareStrings(pattern.substr(0, i), pattern.substr(1, i));
     }
 }
-size_t compareStrings(std::string suff, std::string pref) {
+int compareStrings(std::string suff, std::string pref) {
     if (suff.empty()) return 0;
     // std::cout << suff << "\t" << pref << std::endl;
     return suff == pref ? suff.length() : 
@@ -47,6 +52,11 @@ size_t compareStrings(std::string suff, std::string pref) {
 } 
 
 std::vector<int> BoyerMoore(const std::string& text, const std::string& pattern) {
+    if (text.length() < pattern.length())
+        return std::vector<int>();
+    if (text.length() == pattern.length())
+        return std::vector<int>{0};
+
     size_t n = text.length();
     size_t m = pattern.length();
     std::vector<int> result;
@@ -106,4 +116,50 @@ void goodSuffixRule(const std::string& pattern, std::vector<int>& suff) {
             break;
         }
     }
+}
+
+std::vector<int> RabinKarp(const std::string& text, const std::string& pattern) {
+    if (text.length() < pattern.length())
+        return std::vector<int>();
+    if (text.length() == pattern.length())
+        return std::vector<int>{0};
+
+    std::vector<int> result;
+
+    const int patternHash = calculateHash(pattern);
+    const int length = pattern.length();
+
+    int x_length = 1;
+    for (int i = 0; i < length - 1; i++) {
+        x_length = (x_length * x) % q;
+    }
+
+    int textSubstrHash = calculateHash(text.substr(0, length));
+
+    int i = 0;
+    while(true) {
+        if (textSubstrHash == patternHash) {
+            if (pattern == text.substr(i, length)) {
+                result.push_back(i);
+            }
+        }
+
+        if (text.length() <= i + length)
+            break;
+
+        textSubstrHash = ( (int) (textSubstrHash - (text[i] * x_length)) * x + text[i + length]) % q;
+        ++i;
+    }
+
+    return result;
+}
+int calculateHash(const std::string& text) {
+    return schemeGorner(text) % q;
+}
+int  schemeGorner(const std::string& text) {
+    int result = 0;
+    for (int i : text) {
+        result = ((result * x) % q + (int) i) % q;
+    }
+    return result;
 }
